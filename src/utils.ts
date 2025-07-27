@@ -55,6 +55,15 @@ export const formatDate = (dateString: string): string => {
   });
 };
 
+export const formatDateOnly = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
 // Validation utilities
 export const validateParticipantName = (name: string, existingParticipants: Participant[]): string | null => {
   const trimmedName = name.trim();

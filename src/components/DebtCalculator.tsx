@@ -5,9 +5,10 @@ import { formatCurrency, roundToTwoDecimals, calculateParticipantStats } from '.
 interface DebtCalculatorProps {
   participants: Participant[];
   expenses: Expense[];
+  onCalculationsUpdate?: (balances: Balance[], settlements: Settlement[], stats: ParticipantStats[]) => void;
 }
 
-export default function DebtCalculator({ participants, expenses }: DebtCalculatorProps) {
+export default function DebtCalculator({ participants, expenses, onCalculationsUpdate }: DebtCalculatorProps) {
   const [balances, setBalances] = useState<Balance[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [stats, setStats] = useState<ParticipantStats[]>([]);
@@ -78,10 +79,20 @@ export default function DebtCalculator({ participants, expenses }: DebtCalculato
       setBalances(balanceArray);
       setStats(statsArray);
       calculateSettlements(balanceArray);
+      
+      // Notify parent component of calculation updates
+      if (onCalculationsUpdate) {
+        onCalculationsUpdate(balanceArray, settlements, statsArray);
+      }
     } else {
       setBalances([]);
       setStats([]);
       setSettlements([]);
+      
+      // Notify parent component of calculation updates
+      if (onCalculationsUpdate) {
+        onCalculationsUpdate([], [], []);
+      }
     }
   }, [participants, expenses]);
 
