@@ -6,7 +6,6 @@ import ParticipantsManager from './components/ParticipantsManager';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
 import DebtCalculator from './components/DebtCalculator';
-import SpendingChart from './components/SpendingChart';
 
 function App() {
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -149,10 +148,6 @@ function App() {
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
               <DebtCalculator participants={participants} expenses={expenses} />
             </div>
-
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-              <SpendingChart participants={participants} expenses={expenses} />
-            </div>
           </div>
         </div>
 
@@ -178,10 +173,6 @@ function App() {
           
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
             <DebtCalculator participants={participants} expenses={expenses} />
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <SpendingChart participants={participants} expenses={expenses} />
           </div>
         </div>
       </main>
