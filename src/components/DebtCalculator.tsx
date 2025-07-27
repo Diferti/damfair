@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Participant, Expense, Balance, Settlement } from '../types';
-import { formatCurrency, roundToTwoDecimals } from '../utils';
+import { formatCurrency, roundToTwoDecimals, calculateParticipantStats } from '../utils';
 
 interface DebtCalculatorProps {
   participants: Participant[];
@@ -11,57 +11,13 @@ export default function DebtCalculator({ participants, expenses }: DebtCalculato
   const [balances, setBalances] = useState<Balance[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
 
-  // Calculate balances and settlements when data changes
-  useEffect(() => {
-    if (participants.length > 0 && expenses.length > 0) {
-      calculateBalances();
-    } else {
-      setBalances([]);
-      setSettlements([]);
-    }
-  }, [participants, expenses]);
-
-  const calculateBalances = () => {
-    // Initialize balances for all participants
-    const balanceMap = new Map<string, number>();
-    participants.forEach(participant => {
-      balanceMap.set(participant.name, 0);
-    });
-
-    // Process each expense
-    expenses.forEach(expense => {
-      const amount = expense.amount;
-      const involvedCount = expense.involved.length;
-      const sharePerPerson = amount / involvedCount;
-
-      // Credit the payer with the full amount
-      const currentPayerBalance = balanceMap.get(expense.payer) || 0;
-      balanceMap.set(expense.payer, currentPayerBalance + amount);
-
-      // Debit each involved person with their share
-      expense.involved.forEach(participantName => {
-        const currentBalance = balanceMap.get(participantName) || 0;
-        balanceMap.set(participantName, currentBalance - sharePerPerson);
-      });
-    });
-
-    // Convert to array and sort by balance
-    const balanceArray: Balance[] = Array.from(balanceMap.entries()).map(([name, amount]) => ({
-      name,
-      amount: roundToTwoDecimals(amount)
-    }));
-
-    setBalances(balanceArray);
-    calculateSettlements(balanceArray);
-  };
-
   const calculateSettlements = (balanceArray: Balance[]) => {
     const settlements: Settlement[] = [];
-    const balances = [...balanceArray];
+    const balances = balanceArray.map(balance => ({ ...balance }));
 
     // Separate creditors (positive balance) and debtors (negative balance)
-    const creditors = balances.filter(b => b.amount > 0).sort((a, b) => b.amount - a.amount);
-    const debtors = balances.filter(b => b.amount < 0).sort((a, b) => a.amount - b.amount);
+    const creditors = balances.filter(b => b.amount > 0.01).sort((a, b) => b.amount - a.amount);
+    const debtors = balances.filter(b => b.amount < -0.01).sort((a, b) => a.amount - b.amount);
 
     let creditorIndex = 0;
     let debtorIndex = 0;
@@ -86,8 +42,8 @@ export default function DebtCalculator({ participants, expenses }: DebtCalculato
       });
 
       // Update remaining balances
-      creditor.amount -= settlementAmount;
-      debtor.amount += settlementAmount;
+      creditor.amount = roundToTwoDecimals(creditor.amount - settlementAmount);
+      debtor.amount = roundToTwoDecimals(debtor.amount + settlementAmount);
 
       // Move to next person if balance is settled
       if (Math.abs(creditor.amount) < 0.01) creditorIndex++;
@@ -97,6 +53,26 @@ export default function DebtCalculator({ participants, expenses }: DebtCalculato
     setSettlements(settlements);
   };
 
+  // Calculate balances and settlements when data changes
+  useEffect(() => {
+    if (participants.length > 0 && expenses.length > 0) {
+      // Use the same calculation logic as SpendingChart
+      const statsMap = calculateParticipantStats(participants, expenses);
+
+      // Convert to balance array (net balance = totalPaid - totalOwed)
+      const balanceArray: Balance[] = Array.from(statsMap.entries()).map(([name, stats]: [string, { totalPaid: number; totalOwed: number }]) => ({
+        name,
+        amount: roundToTwoDecimals(stats.totalPaid - stats.totalOwed)
+      }));
+      
+      setBalances(balanceArray);
+      calculateSettlements(balanceArray);
+    } else {
+      setBalances([]);
+      setSettlements([]);
+    }
+  }, [participants, expenses]);
+  
   if (participants.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -118,7 +94,7 @@ export default function DebtCalculator({ participants, expenses }: DebtCalculato
       </div>
     );
   }
-
+  
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Debt Calculator</h2>
@@ -126,6 +102,10 @@ export default function DebtCalculator({ participants, expenses }: DebtCalculato
       {/* Individual Balances */}
       <div className="mb-6">
         <h3 className="text-lg font-medium text-gray-700 mb-3">Individual Balances</h3>
+        <p className="text-sm text-gray-600 mb-3">
+          Shows how much each person is ahead (+) or behind (-) in the group's total expenses.
+        </p>
+        
         <div className="space-y-2">
           {balances.map((balance) => (
             <div
@@ -142,7 +122,10 @@ export default function DebtCalculator({ participants, expenses }: DebtCalculato
                     : 'text-gray-600'
                 }`}
               >
-                {balance.amount > 0 ? '+' : ''}{formatCurrency(balance.amount)}
+                {balance.amount === 0 
+                  ? formatCurrency(0) 
+                  : (balance.amount > 0 ? '+' : '') + formatCurrency(balance.amount)
+                }
               </span>
             </div>
           ))}
