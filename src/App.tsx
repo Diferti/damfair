@@ -146,8 +146,13 @@ function App() {
             </div>
             
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-              <DebtCalculator participants={participants} expenses={expenses} />
+              <DebtCalculator 
+                participants={participants} 
+                expenses={expenses} 
+              />
             </div>
+            
+
           </div>
         </div>
 
@@ -172,8 +177,13 @@ function App() {
           </div>
           
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <DebtCalculator participants={participants} expenses={expenses} />
+            <DebtCalculator 
+              participants={participants} 
+              expenses={expenses} 
+            />
           </div>
+          
+
         </div>
       </main>
 

@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import type { Participant, Expense, Balance, Settlement, ParticipantStats } from '../types';
 import { formatCurrency, roundToTwoDecimals, calculateParticipantStats } from '../utils';
+import ExportButton from './ExportButton';
 
 interface DebtCalculatorProps {
   participants: Participant[];
   expenses: Expense[];
-  onCalculationsUpdate?: (balances: Balance[], settlements: Settlement[], stats: ParticipantStats[]) => void;
 }
 
-export default function DebtCalculator({ participants, expenses, onCalculationsUpdate }: DebtCalculatorProps) {
+export default function DebtCalculator({ participants, expenses }: DebtCalculatorProps) {
   const [balances, setBalances] = useState<Balance[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [stats, setStats] = useState<ParticipantStats[]>([]);
@@ -79,20 +79,10 @@ export default function DebtCalculator({ participants, expenses, onCalculationsU
       setBalances(balanceArray);
       setStats(statsArray);
       calculateSettlements(balanceArray);
-      
-      // Notify parent component of calculation updates
-      if (onCalculationsUpdate) {
-        onCalculationsUpdate(balanceArray, settlements, statsArray);
-      }
     } else {
       setBalances([]);
       setStats([]);
       setSettlements([]);
-      
-      // Notify parent component of calculation updates
-      if (onCalculationsUpdate) {
-        onCalculationsUpdate([], [], []);
-      }
     }
   }, [participants, expenses]);
 
@@ -111,7 +101,7 @@ export default function DebtCalculator({ participants, expenses, onCalculationsU
   
   if (participants.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-6" data-testid="debt-calculator">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Debt Calculator</h2>
         <p className="text-gray-500 text-center py-4">
           Add participants first to see debt calculations.
@@ -122,7 +112,7 @@ export default function DebtCalculator({ participants, expenses, onCalculationsU
 
   if (expenses.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-6" data-testid="debt-calculator">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Debt Calculator</h2>
         <p className="text-gray-500 text-center py-4">
           Add some expenses first to see debt calculations.
@@ -132,15 +122,12 @@ export default function DebtCalculator({ participants, expenses, onCalculationsU
   }
   
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white rounded-lg shadow-md p-6" data-testid="debt-calculator">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Debt Calculator</h2>
 
       {/* Individual Balances */}
       <div className="mb-6">
         <h3 className="text-lg font-medium text-gray-700 mb-2">Individual Balances</h3>
-        <p className="text-xs text-gray-500 mb-3">
-          Net balance per person (+ ahead, - behind)
-        </p>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {balances.map((balance) => (
@@ -275,6 +262,8 @@ export default function DebtCalculator({ participants, expenses, onCalculationsU
             ))}
           </div>
         )}
+        
+
       </div>
 
       {/* Summary */}
@@ -285,6 +274,17 @@ export default function DebtCalculator({ participants, expenses, onCalculationsU
           </p>
         </div>
       )}
+      
+      {/* Export Buttons */}
+      <div className="mt-6 pt-4 border-t border-gray-200">
+        <ExportButton 
+          participants={participants}
+          expenses={expenses}
+          balances={balances}
+          settlements={settlements}
+          stats={stats}
+        />
+      </div>
     </div>
   );
 } 

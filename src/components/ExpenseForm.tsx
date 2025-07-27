@@ -224,10 +224,6 @@ export default function ExpenseForm({ participants, onExpenseAdded }: ExpenseFor
           Add Expense
         </button>
       </form>
-
-      <p className="text-xs text-gray-500 mt-2 text-center">
-        Press Ctrl+Enter to submit
-      </p>
     </div>
   );
 } 

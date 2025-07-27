@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { Participant, Expense, Balance, Settlement, ParticipantStats } from '../types';
 import { formatCurrency, formatDate, calculateParticipantStats, roundToTwoDecimals } from '../utils';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface ExportReportProps {
   participants: Participant[];
@@ -68,6 +70,7 @@ export default function ExportReport({
       await exportAsJSON(report);
       await exportAsCSV(report);
       await exportAsText(report);
+      await exportAsPDF(report);
       
     } catch (error) {
       console.error('Error generating report:', error);
@@ -222,6 +225,174 @@ export default function ExportReport({
     URL.revokeObjectURL(url);
   };
 
+  const exportAsPDF = async (report: any) => {
+    // Create a temporary div to render the report content
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.top = '0';
+    tempDiv.style.width = '800px';
+    tempDiv.style.backgroundColor = 'white';
+    tempDiv.style.padding = '20px';
+    tempDiv.style.fontFamily = 'Arial, sans-serif';
+    tempDiv.style.fontSize = '12px';
+    tempDiv.style.lineHeight = '1.4';
+    
+    // Generate HTML content for the PDF
+    tempDiv.innerHTML = `
+      <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
+        <h1 style="color: #1f2937; margin: 0 0 10px 0; font-size: 24px;">🦫 DamFair Expense Report</h1>
+        <p style="color: #6b7280; margin: 0; font-size: 14px;">Fair expense splitting, no drama</p>
+        <p style="color: #6b7280; margin: 5px 0 0 0; font-size: 12px;">Generated: ${report.generatedAt}</p>
+      </div>
+      
+      <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <h2 style="color: #374151; margin: 0 0 15px 0; font-size: 18px;">Summary</h2>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+          <div style="text-align: center;">
+            <div style="font-size: 10px; color: #6b7280; text-transform: uppercase;">Participants</div>
+            <div style="font-size: 20px; font-weight: bold; color: #3b82f6;">${report.summary.totalParticipants}</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 10px; color: #6b7280; text-transform: uppercase;">Total Expenses</div>
+            <div style="font-size: 20px; font-weight: bold; color: #3b82f6;">${report.summary.totalExpenses}</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 10px; color: #6b7280; text-transform: uppercase;">Total Amount</div>
+            <div style="font-size: 20px; font-weight: bold; color: #3b82f6;">${formatCurrency(report.summary.totalAmount)}</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 10px; color: #6b7280; text-transform: uppercase;">Settlements</div>
+            <div style="font-size: 20px; font-weight: bold; color: #3b82f6;">${report.summary.totalSettlements}</div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <h2 style="color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; margin-bottom: 15px; font-size: 16px;">Individual Balances</h2>
+        ${report.balances.map((balance: any) => `
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+            <span style="font-weight: 500;">${balance.name}</span>
+            <span style="font-weight: bold; color: ${balance.amount > 0 ? '#059669' : balance.amount < 0 ? '#dc2626' : '#6b7280'};">
+              ${balance.amount >= 0 ? '+' : ''}${balance.formattedAmount}
+            </span>
+          </div>
+        `).join('')}
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <h2 style="color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; margin-bottom: 15px; font-size: 16px;">Settlement Plan</h2>
+        ${report.settlements.length === 0 ? 
+          '<p style="text-align: center; color: #059669; font-weight: bold;">🎉 All debts are already settled!</p>' :
+          report.settlements.map((settlement: any, index: number) => `
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+              <span>${index + 1}. ${settlement.from} → ${settlement.to}</span>
+              <span style="font-weight: bold; color: #3b82f6;">${settlement.formattedAmount}</span>
+            </div>
+          `).join('')
+        }
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <h2 style="color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; margin-bottom: 15px; font-size: 16px;">Detailed Spending Breakdown</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+          <thead>
+            <tr style="background: #3b82f6; color: white;">
+              <th style="padding: 8px; text-align: left; font-size: 12px;">Name</th>
+              <th style="padding: 8px; text-align: left; font-size: 12px;">Total Paid</th>
+              <th style="padding: 8px; text-align: left; font-size: 12px;">Total Owed</th>
+              <th style="padding: 8px; text-align: left; font-size: 12px;">Net Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${report.detailedStats.map((stat: any) => `
+              <tr style="border-bottom: 1px solid #e5e7eb;">
+                <td style="padding: 8px; font-weight: 500; font-size: 12px;">${stat.name}</td>
+                <td style="padding: 8px; font-size: 12px;">${stat.formattedPaid}</td>
+                <td style="padding: 8px; font-size: 12px;">${stat.formattedOwed}</td>
+                <td style="padding: 8px; font-weight: bold; font-size: 12px; color: ${stat.netBalance >= 0 ? '#059669' : '#dc2626'};">
+                  ${stat.formattedBalance}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <h2 style="color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; margin-bottom: 15px; font-size: 16px;">Expense Details</h2>
+        ${report.expenses.map((expense: any, index: number) => `
+          <div style="border: 1px solid #e5e7eb; border-radius: 6px; padding: 15px; margin-bottom: 15px; background: #fafafa;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb;">
+              <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #1f2937;">${index + 1}. ${expense.description}</h3>
+              <span style="font-size: 16px; font-weight: bold; color: #3b82f6;">${formatCurrency(expense.amount)}</span>
+            </div>
+            <div style="font-size: 11px; color: #6b7280;">
+              <div style="margin-bottom: 5px;"><strong>Payer:</strong> ${expense.payer}</div>
+              <div style="margin-bottom: 5px;"><strong>Date:</strong> ${expense.date}</div>
+              <div style="margin-bottom: 5px;"><strong>Share per person:</strong> ${formatCurrency(expense.sharePerPerson)}</div>
+              <div><strong>Involved:</strong> ${expense.involved.join(', ')}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      
+      <div style="text-align: center; margin-top: 30px; padding-top: 15px; border-top: 2px solid #e5e7eb; color: #6b7280; font-size: 11px;">
+        <p style="margin: 0;">Made with ❤️ for fair expense splitting</p>
+        <p style="margin: 5px 0 0 0;">Works offline. Your data is saved in this browser.</p>
+      </div>
+    `;
+    
+    document.body.appendChild(tempDiv);
+    
+    try {
+      // Convert the div to canvas
+      const canvas = await html2canvas(tempDiv, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        width: 800,
+        height: tempDiv.scrollHeight,
+        scrollX: 0,
+        scrollY: 0
+      });
+      
+      // Create PDF
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth - 20; // 10mm margin on each side
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      let heightLeft = imgHeight;
+      let position = 10; // 10mm top margin
+      
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      heightLeft -= (pdfHeight - 20); // Account for margins
+      
+      // Add additional pages if needed
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight + 10;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= (pdfHeight - 20);
+      }
+      
+      // Save the PDF
+      pdf.save(`damfair-report-${new Date().toISOString().split('T')[0]}.pdf`);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    } finally {
+      // Clean up
+      document.body.removeChild(tempDiv);
+    }
+  };
+
   if (participants.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -280,13 +451,13 @@ export default function ExportReport({
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Export Report (JSON, CSV, TXT)
+              Export Report (JSON, CSV, TXT, PDF)
             </>
           )}
         </button>
 
         <div className="text-xs text-gray-500 text-center">
-          Downloads 3 files: JSON (structured data), CSV (spreadsheet), and TXT (readable format)
+          Downloads 4 files: JSON (structured data), CSV (spreadsheet), TXT (readable format), and PDF (printable report)
         </div>
       </div>
 
