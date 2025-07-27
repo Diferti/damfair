@@ -15,10 +15,12 @@ export default function ExpenseForm({ participants, onExpenseAdded }: ExpenseFor
       if (!payer) {
         setPayer(participants[0].name);
       }
-      // Select all participants by default
-      setInvolved(participants.map(p => p.name));
+      // Only set involved participants if they haven't been set yet or if participants list changed
+      if (involved.length === 0 || involved.length !== participants.length) {
+        setInvolved(participants.map(p => p.name));
+      }
     }
-  }, [participants, payer]);
+  }, [participants]);
 
   const handleInvolvedChange = (participantName: string, checked: boolean) => {
     if (checked) {
@@ -73,7 +75,12 @@ export default function ExpenseForm({ participants, onExpenseAdded }: ExpenseFor
   if (participants.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Add Expense</h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          Add Expense
+        </h2>
         <p className="text-gray-500 text-center py-4">
           Please add participants first before adding expenses.
         </p>
@@ -83,7 +90,12 @@ export default function ExpenseForm({ participants, onExpenseAdded }: ExpenseFor
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Add Expense</h2>
+      <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+        Add Expense
+      </h2>
       
       <form onSubmit={handleSubmit} onKeyPress={handleKeyPress}>
         {/* Description */}

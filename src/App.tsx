@@ -93,7 +93,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -119,7 +119,7 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {/* Responsive Grid Layout */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Left Column */}
@@ -155,40 +155,10 @@ function App() {
 
           </div>
         </div>
-
-        {/* Mobile Layout - Stack vertically on smaller screens */}
-        <div className="xl:hidden space-y-8 mt-8">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <ParticipantsManager 
-              participants={participants} 
-              onParticipantsChange={handleParticipantsChange} 
-            />
-          </div>
-          
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <ExpenseForm 
-              participants={participants} 
-              onExpenseAdded={handleExpenseAdded} 
-            />
-          </div>
-          
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <ExpenseList expenses={expenses} onExpenseDeleted={handleExpenseDeleted} />
-          </div>
-          
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <DebtCalculator 
-              participants={participants} 
-              expenses={expenses} 
-            />
-          </div>
-          
-
-        </div>
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-16">
+      <footer className="bg-white border-t border-gray-200 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center space-y-2">
             <p className="text-gray-500 text-sm">
