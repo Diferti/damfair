@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Participant, Expense, ExpenseFormProps } from '../types';
+import type { Expense, ExpenseFormProps } from '../types';
 import { validateExpense } from '../utils';
 
 export default function ExpenseForm({ participants, onExpenseAdded }: ExpenseFormProps) {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Participant, Expense, Balance, Settlement, ParticipantStats } from '../types';
-import { formatCurrency, formatDate, calculateParticipantStats, roundToTwoDecimals } from '../utils';
+import { formatCurrency, formatDate, roundToTwoDecimals } from '../utils';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 

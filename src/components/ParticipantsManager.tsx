@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import type { Participant, ParticipantsManagerProps } from '../types';
-import { STORAGE_KEYS } from '../types';
-import { saveToStorage, validateParticipantName } from '../utils';
+import type { Participant } from '../types';
+import { validateParticipantName } from '../utils';
 
 interface ControlledParticipantsManagerProps {
   participants: Participant[];
